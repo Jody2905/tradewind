@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% load shop_tags %}
+{% block title %}{{ product.name }}: stock{% endblock %}
+{% block content %}
+{% include "staff/_nav.html" with section="stock" %}
+<a class="back" href="{% url 'staff_stock' %}">← Stock</a>
+<div class="row-between">
+  <h1>{{ product.name }}</h1>
+  <span class="stock-big {% if product.stock == 0 %}danger-text{% elif product.low_on_stock %}warn-text{% endif %}"><strong>{{ product.stock }}</strong> in stock</span>
+</div>
+<div class="two-even">
+  <form method="post" action="{% url 'staff_stock_action' product.sku 'restock' %}" class="card stack">{% csrf_token %}
+    <h2>Delivery received</h2>
+    <label>How many arrived? <input type="number" name="quantity" min="1" required></label>
+    <label>Note <input name="note" maxlength="200" placeholder="Supplier, invoice number"></label>
+    <button class="btn btn-primary">Add to stock</button>
+  </form>
+  <form method="post" action="{% url 'staff_stock_action' product.sku 'count' %}" class="card stack">{% csrf_token %}
+    <h2>Stock count</h2>
+    <label>How many are actually on the shelf? <input type="number" name="quantity" min="0" required></label>
+    <label>Why is it different? <input name="note" maxlength="200" required minlength="3" placeholder="e.g. 2 broken in storage"></label>
+    <button class="btn">Correct the stock</button>
+  </form>
+</div>
+<section class="card">
+  <h2>History</h2>
+  <p class="small muted">Every change to this product's stock, newest first. The balance is always the sum of the changes.</p>
+  <div class="scroll-x">
+  <table class="table compact">
+    <thead><tr><th>When</th><th>What</th><th class="num">Change</th><th class="num">Balance</th><th>Order</th><th>By</th><th>Note</th></tr></thead>
+    <tbody>{% for m in movements %}
+      <tr><td>{{ m.at|date:"j M Y, H:i" }}</td><td>{{ m.get_reason_display }}</td>
+          <td class="num {% if m.change < 0 %}danger-text{% else %}ok-text{% endif %}">{% if m.change > 0 %}+{% endif %}{{ m.change }}</td>
+          <td class="num">{{ m.balance_after }}</td>
+          <td>{% if m.order %}<a href="{% url 'staff_order' m.order.number %}">{{ m.order.number }}</a>{% endif %}</td>
+          <td class="small">{{ m.by.get_full_name|default:"" }}</td><td class="small muted">{{ m.note }}</td></tr>
+    {% empty %}<tr><td colspan="7" class="muted">No stock movements yet.</td></tr>{% endfor %}</tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

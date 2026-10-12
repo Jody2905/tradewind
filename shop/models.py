@@ -152,6 +152,8 @@ class Order(models.Model):
     cancelled_at = models.DateTimeField(null=True, blank=True)
     cancel_reason = models.CharField(max_length=200, blank=True)
     refund_due = models.BooleanField(default=False)
+    refunded_at = models.DateTimeField(null=True, blank=True)
+    refund_reference = models.CharField(max_length=60, blank=True)
 
     class Meta:
         ordering = ["-placed_at", "-id"]
@@ -165,6 +167,8 @@ class Order(models.Model):
                                    name="delivery_needs_address"),
             models.CheckConstraint(condition=Q(paid_at__isnull=False) | Q(status__in=["awaiting_payment", "cancelled"]),
                                    name="paid_before_packing"),
+            models.CheckConstraint(condition=Q(refunded_at__isnull=True) | Q(paid_at__isnull=False, refund_due=False),
+                                   name="refund_only_after_payment"),
         ]
 
     def __str__(self):

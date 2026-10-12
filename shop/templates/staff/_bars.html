@@ -1,0 +1,13 @@
+{% load shop_tags %}{# Sales per day: one series, so no legend. Hover a bar for the figure; a table is below. #}
+<div class="chart" role="img" aria-label="Sales per day; the best day was {{ peak|money }}">
+  <div class="cols">
+    {% for day, gross, count in days %}
+      <div class="col-slot" title="{{ day|date:'D j M' }}: {{ gross|money }} from {{ count }} order{{ count|pluralize }}">
+        <span class="col h{{ gross|bar_height:peak }}">{% if gross == peak and peak %}<span class="col-label">{{ gross|money }}</span>{% endif %}</span>
+      </div>
+    {% endfor %}
+  </div>
+  <div class="col-axis">
+    {% for day, gross, count in days %}<span class="tick">{% if forloop.first or forloop.last or day.day == 1 or days|length <= 8 %}{{ day|date:'j M' }}{% endif %}</span>{% endfor %}
+  </div>
+</div>

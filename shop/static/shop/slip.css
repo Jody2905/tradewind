@@ -1,0 +1,10 @@
+body { font: 14px/1.5 "Segoe UI", system-ui, sans-serif; color: #000; max-width: 700px; margin: 24px auto; padding: 0 16px; }
+header { border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 14px; }
+h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: 1px; }
+.addr { white-space: pre-wrap; }
+table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid #999; }
+.tick { width: 30px; font-size: 18px; }
+.qty { font-size: 18px; font-weight: 700; width: 50px; }
+.foot { margin-top: 40px; }
+@media print { body { margin: 0; } }

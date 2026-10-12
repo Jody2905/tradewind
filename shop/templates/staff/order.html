@@ -1,0 +1,93 @@
+{% extends "base.html" %}{% load shop_tags %}
+{% block title %}{{ order.number }}{% endblock %}
+{% block content %}
+{% include "staff/_nav.html" with section="orders" %}
+<a class="back" href="{% url 'staff_orders' %}">← Orders</a>
+<div class="row-between">
+  <h1>{{ order.number }}</h1>
+  {% include "shop/_status.html" %}
+</div>
+<p class="muted">Placed {{ order.placed_at|date:"D j M Y, H:i" }} by <strong>{{ order.customer.get_full_name|default:order.customer.email }}</strong> ({{ order.customer.email }}, {{ order.phone }})</p>
+
+<div class="two">
+  <div>
+    {# ---- The next step for this order ---- #}
+    {% if order.status == 'awaiting_payment' %}
+    <section class="card action">
+      <h2>Record payment of {{ order.total_cents|money }}</h2>
+      <p class="small muted">{{ order.get_payment_method_display }} · pay by {{ order.pay_by|date:"D j M, H:i" }}{% if order.pay_by < now %} <strong class="danger-text">(overdue)</strong>{% endif %}</p>
+      <form method="post" action="{% url 'staff_order_action' order.number 'paid' %}" class="row">{% csrf_token %}
+        <input name="reference" placeholder="{% if order.payment_method == 'bank_transfer' %}Bank transfer reference{% else %}Receipt number{% endif %}" required maxlength="60">
+        <button class="btn btn-primary">Payment received</button>
+      </form>
+    </section>
+    {% elif order.status == 'paid' %}
+    <section class="card action">
+      <h2>Pack this order</h2>
+      <div class="row">
+        <a class="btn" href="{% url 'staff_slip' order.number %}" target="_blank" rel="noopener">Print packing slip</a>
+        <form method="post" action="{% url 'staff_order_action' order.number 'packed' %}">{% csrf_token %}<button class="btn btn-primary">Mark as packed</button></form>
+      </div>
+    </section>
+    {% elif order.status == 'packed' %}
+    <section class="card action">
+      <h2>{% if order.fulfilment == 'collect' %}Waiting for collection{% else %}Out for delivery{% endif %}</h2>
+      <form method="post" action="{% url 'staff_order_action' order.number 'completed' %}">{% csrf_token %}
+        <button class="btn btn-primary">{% if order.fulfilment == 'collect' %}Collected{% else %}Delivered{% endif %}</button></form>
+    </section>
+    {% endif %}
+    {% if order.refund_due %}
+    <section class="card action refund">
+      <h2>Refund {{ order.total_cents|money }} to the customer</h2>
+      <form method="post" action="{% url 'staff_order_action' order.number 'refund' %}" class="row">{% csrf_token %}
+        <input name="reference" placeholder="Refund reference" required maxlength="60">
+        <button class="btn btn-primary">Refund sent</button>
+      </form>
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <h2>Items</h2>
+      <div class="scroll-x">
+      <table class="table">
+        <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th><th class="num">VAT</th></tr></thead>
+        <tbody>{% for l in lines %}
+          <tr><td>{{ l.name }}<br><span class="muted small">{{ l.sku }} · VAT {{ l.vat_rate }}%</span></td><td class="num">{{ l.quantity }}</td>
+              <td class="num">{{ l.unit_price_cents|money }}</td><td class="num">{{ l.line_total_cents|money }}{% if l.discount_cents %}<br><span class="muted small">after −{{ l.discount_cents|money }}</span>{% endif %}</td><td class="num">{{ l.vat_cents|money }}</td></tr>
+        {% endfor %}</tbody>
+      </table>
+      </div>
+      <dl class="totals">
+        <div><dt>Subtotal</dt><dd>{{ order.subtotal_cents|money }}</dd></div>
+        {% if order.discount_cents %}<div class="saving"><dt>Discount {{ order.discount_code }}</dt><dd>−{{ order.discount_cents|money }}</dd></div>{% endif %}
+        {% if order.fulfilment == 'deliver' %}<div><dt>Delivery</dt><dd>{{ order.delivery_cents|money }}</dd></div>{% endif %}
+        <div class="grand"><dt>Total</dt><dd>{{ order.total_cents|money }}</dd></div>
+        <div class="vat"><dt>Includes VAT</dt><dd>{{ order.vat_cents|money }}</dd></div>
+      </dl>
+    </section>
+  </div>
+
+  <aside>
+    <section class="card">
+      <h2>{{ order.get_fulfilment_display }}</h2>
+      {% if order.fulfilment == 'deliver' %}<p class="prewrap">{{ order.delivery_address }}</p>{% endif %}
+      <p class="small muted">{{ order.get_payment_method_display }}{% if order.payment_reference %}<br>Payment ref {{ order.payment_reference }}{% endif %}{% if order.refund_reference %}<br>Refund ref {{ order.refund_reference }}{% endif %}</p>
+    </section>
+    <section class="card">
+      <h2>History</h2>
+      <ol class="timeline">{% for e in events %}
+        <li><strong>{{ e.get_to_status_display }}</strong> <span class="muted small">{{ e.at|date:"j M H:i" }}{% if e.by %} · {{ e.by.get_full_name|default:e.by.email }}{% elif e.from_status %} · automatic{% endif %}</span>{% if e.note %}<br><span class="small">{{ e.note }}</span>{% endif %}</li>
+      {% endfor %}</ol>
+      {% if order.status != 'completed' and order.status != 'cancelled' %}
+      <details>
+        <summary>Cancel this order</summary>
+        <form method="post" action="{% url 'staff_order_action' order.number 'cancel' %}" class="stack">{% csrf_token %}
+          <input name="reason" placeholder="Reason (the customer sees this)" required minlength="3" maxlength="200">
+          <button class="btn btn-danger">Cancel and return stock{% if order.paid_at %} (refund will be due){% endif %}</button>
+        </form>
+      </details>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}

@@ -223,6 +223,23 @@ def cancel_order(user, order, reason, now=None):
         return order
 
 
+def record_refund(staff, order, reference, now=None):
+    """Staff confirm the money has been sent back for a cancelled, paid order."""
+    _require_staff(staff)
+    reference = (reference or "").strip()
+    if not reference:
+        raise ShopError("Enter the refund reference (cheque or transfer number).")
+    with transaction.atomic():
+        order = Order.objects.select_for_update().get(pk=order.pk)
+        if not order.refund_due:
+            raise ShopError(f"No refund is due on {order.number}.")
+        now = now or timezone.now()
+        order.refund_due, order.refunded_at, order.refund_reference = False, now, reference
+        order.save()
+        _event(order, order.status, order.status, staff, now, f"refund sent, ref {reference}")
+        return order
+
+
 def expire_unpaid_orders(now=None):
     """Cancel orders not paid by their deadline and put the stock back. Run once a day."""
     now = now or timezone.now()

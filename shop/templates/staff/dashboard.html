@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% load shop_tags %}
+{% block title %}Staff{% endblock %}
+{% block content %}
+{% include "staff/_nav.html" with section="dash" %}
+<h1>Today at {{ SHOP_NAME }}</h1>
+
+<div class="tiles">
+  <a class="tile" href="{% url 'staff_orders' %}?status=paid"><span class="tile-label">To pack</span><span class="tile-value">{{ counts.to_pack }}</span><span class="tile-sub">paid, waiting to be packed</span></a>
+  <a class="tile" href="{% url 'staff_orders' %}?status=packed"><span class="tile-label">Ready</span><span class="tile-value">{{ counts.ready }}</span><span class="tile-sub">packed, to collect or deliver</span></a>
+  <a class="tile" href="{% url 'staff_orders' %}?status=awaiting_payment"><span class="tile-label">Awaiting payment</span><span class="tile-value">{{ counts.awaiting }}</span><span class="tile-sub">{% if counts.overdue %}<strong class="danger-text">{{ counts.overdue }} overdue</strong>{% else %}none overdue{% endif %}</span></a>
+  <a class="tile" href="{% url 'staff_stock' %}?low=1"><span class="tile-label">Low stock</span><span class="tile-value">{{ counts.low_stock }}</span><span class="tile-sub">products at or below their alert level</span></a>
+</div>
+{% if counts.refunds_due %}<div class="msg msg-error"><a href="{% url 'staff_orders' %}?status=refund_due">{{ counts.refunds_due }} cancelled order{{ counts.refunds_due|pluralize }} still need{{ counts.refunds_due|pluralize:"s," }} a refund →</a></div>{% endif %}
+
+<section class="card">
+  <div class="row-between"><h2>Sales, last 7 days</h2><a href="{% url 'staff_sales' %}" class="small">Sales &amp; VAT report →</a></div>
+  <p class="muted small">{{ week.gross_cents|money }} from {{ week.order_count }} paid order{{ week.order_count|pluralize }}, average {{ week.average_cents|money }}</p>
+  {% include "staff/_bars.html" with days=week.days peak=peak %}
+</section>
+
+<div class="two-even">
+  <section class="card">
+    <h2>Pack next</h2>
+    {% if not to_pack %}<p class="muted">Nothing to pack.</p>{% else %}
+    <table class="table compact"><tbody>
+      {% for o in to_pack %}<tr><td class="nowrap"><a href="{% url 'staff_order' o.number %}">{{ o.number }}</a></td><td>{{ o.customer.get_full_name }}</td><td>{{ o.get_fulfilment_display }}</td><td class="muted small">paid {{ o.paid_at|timesince }} ago</td></tr>{% endfor %}
+    </tbody></table>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Running low</h2>
+    {% if not low %}<p class="muted">Everything is well stocked.</p>{% else %}
+    <table class="table compact"><tbody>
+      {% for p in low %}<tr><td><a href="{% url 'staff_stock_history' p.sku %}">{{ p.name }}</a></td><td class="num {% if p.stock == 0 %}danger-text{% else %}warn-text{% endif %}"><strong>{{ p.stock }}</strong> left</td></tr>{% endfor %}
+    </tbody></table>{% endif %}
+  </section>
+</div>
+{% endblock %}

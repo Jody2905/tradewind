@@ -1,0 +1,7 @@
+<nav class="staff-nav" aria-label="Staff">
+  <a href="{% url 'staff_dashboard' %}" class="{% if section == 'dash' %}on{% endif %}">Overview</a>
+  <a href="{% url 'staff_orders' %}" class="{% if section == 'orders' %}on{% endif %}">Orders</a>
+  <a href="{% url 'staff_stock' %}" class="{% if section == 'stock' %}on{% endif %}">Stock</a>
+  <a href="{% url 'staff_sales' %}" class="{% if section == 'sales' %}on{% endif %}">Sales &amp; VAT</a>
+  {% if user.is_superuser %}<a href="{% url 'admin:index' %}">Admin</a>{% endif %}
+</nav>

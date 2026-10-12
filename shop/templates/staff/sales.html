@@ -1,0 +1,51 @@
+{% extends "base.html" %}{% load shop_tags %}
+{% block title %}Sales &amp; VAT{% endblock %}
+{% block content %}
+{% include "staff/_nav.html" with section="sales" %}
+<div class="row-between">
+  <h1>Sales &amp; VAT</h1>
+  <a class="btn" href="{% url 'staff_sales_xlsx' %}?from={{ first|date:'Y-m-d' }}&amp;to={{ last|date:'Y-m-d' }}">Download (Excel)</a>
+</div>
+<form method="get" class="card period">
+  <label>From <input type="date" name="from" value="{{ first|date:'Y-m-d' }}"></label>
+  <label>To <input type="date" name="to" value="{{ last|date:'Y-m-d' }}"></label>
+  <button class="btn btn-primary">Show</button>
+</form>
+<p class="muted small">Orders paid between {{ first|date:"j M Y" }} and {{ last|date:"j M Y" }}, not counting cancelled orders.</p>
+
+<div class="tiles">
+  <div class="tile"><span class="tile-label">Sales incl. VAT</span><span class="tile-value">{{ r.gross_cents|money }}</span><span class="tile-sub">{{ r.order_count }} order{{ r.order_count|pluralize }}</span></div>
+  <div class="tile"><span class="tile-label">VAT collected</span><span class="tile-value">{{ r.vat_cents|money }}</span><span class="tile-sub">to declare for the period</span></div>
+  <div class="tile"><span class="tile-label">Sales excl. VAT</span><span class="tile-value">{{ r.net_cents|money }}</span><span class="tile-sub">the shop's income</span></div>
+  <div class="tile"><span class="tile-label">Average order</span><span class="tile-value">{{ r.average_cents|money }}</span><span class="tile-sub">{{ r.discount_cents|money }} given in discounts</span></div>
+</div>
+
+<section class="card">
+  <h2>Sales per day</h2>
+  {% include "staff/_bars.html" with days=r.days peak=peak %}
+  <details class="table-view"><summary>Show as a table</summary>
+    <table class="table compact"><thead><tr><th>Date</th><th class="num">Orders</th><th class="num">Sales</th></tr></thead>
+      <tbody>{% for day, gross, count in r.days %}<tr><td>{{ day|date:"D j M" }}</td><td class="num">{{ count }}</td><td class="num">{{ gross|money }}</td></tr>{% endfor %}</tbody></table>
+  </details>
+</section>
+
+<div class="two-even">
+  <section class="card">
+    <h2>VAT summary</h2>
+    <table class="table compact">
+      <thead><tr><th></th><th class="num">Incl. VAT</th><th class="num">VAT</th><th class="num">Excl. VAT</th></tr></thead>
+      <tbody>{% for v in r.vat_rows %}<tr><td>{{ v.label }}</td><td class="num">{{ v.gross_cents|money }}</td><td class="num">{{ v.vat_cents|money }}</td><td class="num">{{ v.net_cents|money }}</td></tr>{% endfor %}
+        <tr class="total-row"><td>Total</td><td class="num">{{ r.gross_cents|money }}</td><td class="num">{{ r.vat_cents|money }}</td><td class="num">{{ r.net_cents|money }}</td></tr></tbody>
+    </table>
+    {% if r.refunds_due %}<p class="small danger-text">{{ r.refunds_due|length }} order{{ r.refunds_due|length|pluralize }} cancelled after payment in this period ({% for o in r.refunds_due %}{{ o.number }}{% if not forloop.last %}, {% endif %}{% endfor %}): not counted above.</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Best sellers</h2>
+    {% if not r.top_products %}<p class="muted">No sales in this period.</p>{% else %}
+    <table class="table compact">
+      <thead><tr><th>Product</th><th class="num">Sold</th><th class="num">Sales</th></tr></thead>
+      <tbody>{% for name, sku, qty, gross in r.top_products %}<tr><td>{{ name }}</td><td class="num">{{ qty }}</td><td class="num">{{ gross|money }}</td></tr>{% endfor %}</tbody>
+    </table>{% endif %}
+  </section>
+</div>
+{% endblock %}

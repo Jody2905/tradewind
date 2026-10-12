@@ -25,3 +25,11 @@ def stock_label(product):
     if product.low_on_stock:
         return f"Only {product.stock} left"
     return "In stock"
+
+
+@register.filter
+def bar_height(value, peak):
+    """A bar's height as a CSS step (0, 5, 10 ... 100). Any non-zero value shows at least a sliver."""
+    if not value or not peak:
+        return 0
+    return max(5, round(100 * value / peak / 5) * 5)

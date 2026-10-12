@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% load shop_tags %}
+{% block title %}Orders{% endblock %}
+{% block content %}
+{% include "staff/_nav.html" with section="orders" %}
+<div class="row-between">
+  <h1>Orders</h1>
+  <form method="post" action="{% url 'staff_expire' %}">{% csrf_token %}
+    <button class="btn" title="Runs automatically once a day too">Cancel overdue unpaid orders</button>
+  </form>
+</div>
+<div class="filters">
+  <a href="?" class="{% if not status %}on{% endif %}">All</a>
+  {% for value, label in statuses %}<a href="?status={{ value }}" class="{% if status == value %}on{% endif %}">{{ label }}</a>{% endfor %}
+  <a href="?status=overdue" class="{% if status == 'overdue' %}on{% endif %}">Overdue</a>
+  <a href="?status=refund_due" class="{% if status == 'refund_due' %}on{% endif %}">Refund due</a>
+  <form method="get" class="inline-search"><input type="hidden" name="status" value="{{ status }}">
+    <input type="search" name="q" value="{{ q }}" placeholder="Order no., email, surname, phone" aria-label="Search orders"></form>
+</div>
+{% if not orders %}<div class="empty">No orders match.</div>{% else %}
+<div class="card scroll-x">
+<table class="table">
+  <thead><tr><th>Order</th><th>Placed</th><th>Customer</th><th>How</th><th class="num">Total</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for o in orders %}
+    <tr>
+      <td class="nowrap"><a href="{% url 'staff_order' o.number %}">{{ o.number }}</a></td>
+      <td>{{ o.placed_at|date:"j M, H:i" }}</td>
+      <td>{{ o.customer.get_full_name|default:o.customer.email }}</td>
+      <td class="small">{{ o.get_fulfilment_display }}<br><span class="muted">{{ o.get_payment_method_display }}</span></td>
+      <td class="num">{{ o.total_cents|money }}</td>
+      <td>{% include "shop/_status.html" with order=o %}
+        {% if o.status == 'awaiting_payment' and o.pay_by < now %}<br><span class="danger-text small">overdue</span>{% endif %}
+        {% if o.refund_due %}<br><span class="danger-text small">refund due</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}

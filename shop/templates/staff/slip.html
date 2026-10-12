@@ -1,0 +1,14 @@
+{% load static %}<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Packing slip {{ order.number }}</title>
+<link rel="stylesheet" href="{% static 'shop/slip.css' %}"></head>
+<body>
+  <header><strong>{{ SHOP_NAME }}</strong> · Packing slip</header>
+  <h1>{{ order.number }}</h1>
+  <p>{{ order.customer.get_full_name|default:order.customer.email }} · {{ order.phone }}</p>
+  <p><strong>{{ order.get_fulfilment_display }}</strong>{% if order.fulfilment == 'deliver' %}<br><span class="addr">{{ order.delivery_address }}</span>{% endif %}</p>
+  <table>
+    <thead><tr><th class="tick">✓</th><th>Qty</th><th>Item</th><th>SKU</th></tr></thead>
+    <tbody>{% for l in lines %}<tr><td class="tick">☐</td><td class="qty">{{ l.quantity }}</td><td>{{ l.name }}</td><td>{{ l.sku }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <p class="foot">Packed by: ____________________ &nbsp; Date: ____________</p>
+</body></html>
