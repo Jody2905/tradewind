@@ -246,3 +246,12 @@ def test_security_headers(shopper):
 def test_search_text_is_escaped(client, products):
     html = client.get(reverse("catalogue"), {"q": "<script>alert(1)</script>"}).content.decode()
     assert "<script>alert(1)</script>" not in html and "&lt;script&gt;" in html
+
+
+def test_visitors_get_the_shops_own_not_found_page(client, db):
+    """With DEBUG off (as on a real server, and in tests) the friendly page is shown,
+    never Django's developer page listing the site's URLs."""
+    r = client.get("/no-such-page/")
+    assert r.status_code == 404
+    html = r.content.decode()
+    assert "We can't find that page" in html and "URLconf" not in html

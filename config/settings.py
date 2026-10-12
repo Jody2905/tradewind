@@ -6,6 +6,7 @@ from environment variables, never from this file.
 
 import os
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -60,16 +61,37 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# SQLite by default. "IMMEDIATE" makes each transaction take the write lock at the
-# start, so two checkouts can't both read "1 left" and both buy it.
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.environ.get("TRADEWIND_SQLITE_PATH", BASE_DIR / "tradewind.db"),
-        "OPTIONS": {"transaction_mode": "IMMEDIATE", "timeout": 30},
-        "TEST": {"NAME": BASE_DIR / "test-tradewind.db"},   # a real file, so tests can use several threads
+# SQLite by default (one file, nothing to install). Set TRADEWIND_DATABASE_URL to use PostgreSQL,
+# e.g. postgresql://user:password@localhost:5432/tradewind
+DATABASE_URL = os.environ.get("TRADEWIND_DATABASE_URL", "")
+
+
+def _database(url):
+    if not url:
+        return {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": os.environ.get("TRADEWIND_SQLITE_PATH", BASE_DIR / "tradewind.db"),
+            # IMMEDIATE takes the write lock when a transaction starts, so two checkouts
+            # can't both read "1 left" and both buy it (PostgreSQL uses row locks instead)
+            "OPTIONS": {"transaction_mode": "IMMEDIATE", "timeout": 30},
+            "TEST": {"NAME": BASE_DIR / "test-tradewind.db"},   # a real file, so tests can use threads
+        }
+    u = urlparse(url)
+    if u.scheme not in ("postgres", "postgresql"):
+        raise RuntimeError("TRADEWIND_DATABASE_URL must start with postgresql://")
+    return {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": u.path.lstrip("/"),
+        "USER": unquote(u.username or ""),
+        "PASSWORD": unquote(u.password or ""),
+        "HOST": u.hostname or "",
+        "PORT": str(u.port or ""),
+        "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,
     }
-}
+
+
+DATABASES = {"default": _database(DATABASE_URL)}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -84,6 +106,7 @@ USE_I18N = True
 USE_TZ = True                      # store times in UTC, show them in local time
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"     # `collectstatic` gathers files here for a real web server
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "login"
@@ -94,8 +117,14 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 X_FRAME_OPTIONS = "DENY"
 SECURE_REFERRER_POLICY = "same-origin"
-if not DEBUG:                                  # on a real server, cookies only travel over HTTPS
+if not DEBUG:
+    # On a real server: HTTPS only, and tell browsers to remember that
     SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = os.environ.get("TRADEWIND_SSL_REDIRECT", "1") == "1"
+    SECURE_HSTS_SECONDS = int(os.environ.get("TRADEWIND_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in ALLOWED_HOSTS if h not in ("127.0.0.1", "localhost")]
 
 # ---- Shop settings ------------------------------------------------------------
 SHOP_NAME = "Tradewind"
