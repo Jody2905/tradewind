@@ -1,0 +1,7 @@
+{% load shop_tags %}<dl class="totals">
+  <div><dt>Subtotal</dt><dd>{{ q.subtotal_cents|money }}</dd></div>
+  {% if q.discount_cents %}<div class="saving"><dt>Discount {{ q.discount_code }}</dt><dd>−{{ q.discount_cents|money }}</dd></div>{% endif %}
+  {% if fulfilment == 'deliver' or q.delivery_cents %}<div><dt>Delivery</dt><dd>{% if q.delivery_cents %}{{ q.delivery_cents|money }}{% else %}Free{% endif %}</dd></div>{% endif %}
+  <div class="grand"><dt>Total</dt><dd>{{ q.total_cents|money }}</dd></div>
+  <div class="vat"><dt>Includes VAT</dt><dd>{{ q.vat_cents|money }}</dd></div>
+</dl>

@@ -1,0 +1,74 @@
+{% extends "base.html" %}{% load shop_tags %}
+{% block title %}Order {{ order.number }}{% endblock %}
+{% block content %}
+<a class="back" href="{% url 'my_orders' %}">← My orders</a>
+<div class="row-between">
+  <h1>Order {{ order.number }}</h1>
+  {% include "shop/_status.html" %}
+</div>
+<p class="muted">Placed {{ order.placed_at|date:"l j F Y, g:i a" }}</p>
+
+{% if order.status == 'awaiting_payment' %}
+  <div class="card notice">
+    {% if order.payment_method == 'bank_transfer' %}
+      <h2>Please pay by bank transfer</h2>
+      <dl class="bank">
+        <div><dt>Bank</dt><dd>{{ bank.bank }}</dd></div>
+        <div><dt>Account name</dt><dd>{{ bank.account_name }}</dd></div>
+        <div><dt>Account number</dt><dd class="mono">{{ bank.account_number }}</dd></div>
+        <div><dt>Amount</dt><dd><strong>{{ order.total_cents|money }}</strong></dd></div>
+        <div><dt>Reference</dt><dd class="mono"><strong>{{ order.number }}</strong></dd></div>
+      </dl>
+      <p>Please pay by <strong>{{ order.pay_by|date:"l j F, g:i a" }}</strong>; after that the order is cancelled and the items go back on sale.</p>
+    {% else %}
+      <h2>Pay when you collect</h2>
+      <p>Your items are set aside until <strong>{{ order.pay_by|date:"l j F, g:i a" }}</strong>; bring your order number, <strong>{{ order.number }}</strong>.</p>
+    {% endif %}
+  </div>
+{% elif order.status == 'cancelled' %}
+  <div class="msg msg-error">This order was cancelled: {{ order.cancel_reason }}{% if order.refund_due %} · A refund of {{ order.total_cents|money }} is due.{% endif %}</div>
+{% endif %}
+
+<div class="two">
+  <section class="card">
+    <h2>Items</h2>
+    <div class="scroll-x">
+    <table class="table">
+      <thead><tr><th>Item</th><th class="num">Price</th><th class="num">Qty</th><th class="num">Total</th></tr></thead>
+      <tbody>
+      {% for line in lines %}
+        <tr><td>{{ line.name }}<br><span class="muted small">{{ line.sku }}{% if line.vat_rate == 0 %} · VAT-free{% endif %}</span></td>
+            <td class="num">{{ line.unit_price_cents|money }}</td><td class="num">{{ line.quantity }}</td>
+            <td class="num">{{ line.line_total_cents|money }}{% if line.discount_cents %}<br><span class="muted small">after −{{ line.discount_cents|money }}</span>{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <dl class="totals">
+      <div><dt>Subtotal</dt><dd>{{ order.subtotal_cents|money }}</dd></div>
+      {% if order.discount_cents %}<div class="saving"><dt>Discount {{ order.discount_code }}</dt><dd>−{{ order.discount_cents|money }}</dd></div>{% endif %}
+      {% if order.fulfilment == 'deliver' %}<div><dt>Delivery</dt><dd>{% if order.delivery_cents %}{{ order.delivery_cents|money }}{% else %}Free{% endif %}</dd></div>{% endif %}
+      <div class="grand"><dt>Total</dt><dd>{{ order.total_cents|money }}</dd></div>
+      <div class="vat"><dt>Includes VAT</dt><dd>{{ order.vat_cents|money }}</dd></div>
+    </dl>
+  </section>
+  <aside class="card">
+    <h2>{{ order.get_fulfilment_display }}</h2>
+    {% if order.fulfilment == 'deliver' %}<p class="prewrap">{{ order.delivery_address }}</p>{% else %}<p>Tradewind, Bay Street</p>{% endif %}
+    <p class="muted">Phone: {{ order.phone }}<br>Payment: {{ order.get_payment_method_display }}{% if order.payment_reference %} (ref {{ order.payment_reference }}){% endif %}</p>
+    <h2>Progress</h2>
+    <ol class="timeline">
+      {% for e in events %}<li><strong>{{ e.get_to_status_display|default:e.to_status }}</strong> <span class="muted small">{{ e.at|date:"j M, g:i a" }}</span></li>{% endfor %}
+    </ol>
+    {% if can_cancel %}
+    <details>
+      <summary>Cancel this order</summary>
+      <form method="post" action="{% url 'order_cancel' order.number %}" class="stack">{% csrf_token %}
+        <input name="reason" placeholder="Why? (e.g. ordered the wrong thing)" required minlength="3" maxlength="200">
+        <button class="btn btn-danger">Cancel order</button>
+      </form>
+    </details>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

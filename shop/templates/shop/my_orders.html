@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load shop_tags %}
+{% block title %}My orders{% endblock %}
+{% block content %}
+<h1>My orders</h1>
+{% if not orders %}
+  <div class="empty">You haven't ordered anything yet. <a href="{% url 'catalogue' %}">Start shopping →</a></div>
+{% else %}
+<div class="card scroll-x">
+<table class="table">
+  <thead><tr><th>Order</th><th>Placed</th><th>Items</th><th class="num">Total</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for order in orders %}
+    <tr>
+      <td><a href="{% url 'order' order.number %}">{{ order.number }}</a></td>
+      <td>{{ order.placed_at|date:"j M Y" }}</td>
+      <td>{{ order.lines.all|length }} item{{ order.lines.all|length|pluralize }}</td>
+      <td class="num">{{ order.total_cents|money }}</td>
+      <td>{% include "shop/_status.html" %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}

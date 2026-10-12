@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% load shop_tags %}
+{% block title %}{% if category %}{{ category.name }}{% elif query %}Search{% else %}Shop{% endif %}{% endblock %}
+{% block content %}
+{% if not category and not query and page.number == 1 %}
+<section class="hero">
+  <h1>Local goods, packed with care</h1>
+  <p>Spices, preserves, crafts and soaps from small island makers. Collect from the shop or get it delivered, free on orders over EC$300.</p>
+</section>
+{% endif %}
+
+<nav class="cats" aria-label="Categories">
+  <a href="{% url 'catalogue' %}" class="{% if not category %}on{% endif %}">All</a>
+  {% for c in categories %}<a href="{% url 'catalogue' %}?category={{ c.slug }}" class="{% if category == c %}on{% endif %}">{{ c.name }}</a>{% endfor %}
+</nav>
+
+{% if query %}<p class="muted">{{ page.paginator.count }} result{{ page.paginator.count|pluralize }} for “{{ query }}” · <a href="{% url 'catalogue' %}">clear search</a></p>{% endif %}
+
+{% if not page.object_list %}
+  <div class="empty">Nothing matches that. Try another word, or <a href="{% url 'catalogue' %}">browse everything</a>.</div>
+{% else %}
+<div class="grid">
+  {% for product in page.object_list %}
+  <a class="card product-card" href="{% url 'product' product.slug %}">
+    {% include "shop/_art.html" %}
+    <div class="card-body">
+      <h2>{{ product.name }}</h2>
+      <div class="row-between">
+        <span class="price">{{ product.price_cents|money }}</span>
+        <span class="stock {% if product.stock == 0 %}stock-out{% elif product.low_on_stock %}stock-low{% endif %}">{% stock_label product %}</span>
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if page.has_other_pages %}
+<nav class="pager">
+  {% if page.has_previous %}<a href="?{% if category %}category={{ category.slug }}&amp;{% endif %}{% if query %}q={{ query|urlencode }}&amp;{% endif %}page={{ page.previous_page_number }}">← Previous</a>{% endif %}
+  <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}<a href="?{% if category %}category={{ category.slug }}&amp;{% endif %}{% if query %}q={{ query|urlencode }}&amp;{% endif %}page={{ page.next_page_number }}">Next →</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

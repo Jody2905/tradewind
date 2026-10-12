@@ -1,0 +1,52 @@
+{% extends "base.html" %}{% load shop_tags %}
+{% block title %}Checkout{% endblock %}
+{% block content %}
+<h1>Checkout</h1>
+<div class="two">
+  <form method="post" class="card stack" novalidate>{% csrf_token %}
+    {{ form.token }}
+    <input type="hidden" name="fulfilment" value="{{ fulfilment }}">
+    {% if form.non_field_errors %}<div class="msg msg-error">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+
+    <fieldset>
+      <legend>How would you like to receive it?</legend>
+      <div class="tabs">
+        <a href="?fulfilment=collect" class="tab {% if fulfilment == 'collect' %}on{% endif %}">Collect from the shop<br><span class="small muted">Free · Bay Street</span></a>
+        <a href="?fulfilment=deliver" class="tab {% if fulfilment == 'deliver' %}on{% endif %}">Delivery<br><span class="small muted">{% if q.delivery_cents %}{{ q.delivery_cents|money }}{% else %}Free on this order{% endif %}</span></a>
+      </div>
+    </fieldset>
+
+    {% if fulfilment == 'deliver' %}
+    <label>Delivery address
+      {{ form.delivery_address }}
+      {% for e in form.delivery_address.errors %}<span class="err">{{ e }}</span>{% endfor %}
+    </label>
+    {% endif %}
+
+    <label>Phone number <span class="hint">so we can tell you when it's ready</span>
+      {{ form.phone }}
+      {% for e in form.phone.errors %}<span class="err">{{ e }}</span>{% endfor %}
+    </label>
+
+    <fieldset>
+      <legend>How will you pay?</legend>
+      {% for radio in form.payment_method %}
+        <label class="choice">{{ radio.tag }} <span><strong>{{ radio.choice_label }}</strong><br>
+          <span class="small muted">{% if radio.data.value == 'collection' %}Pay in the shop when you collect (cash or card). We'll hold your order for 2 days.{% else %}We'll show our bank details next. Pay within 3 days and we'll pack it once it arrives.{% endif %}</span></span></label>
+      {% endfor %}
+      {% for e in form.payment_method.errors %}<span class="err">{{ e }}</span>{% endfor %}
+    </fieldset>
+    <p class="small muted">We never ask for card details online.</p>
+    <button class="btn btn-primary full">Place order · {{ q.total_cents|money }}</button>
+  </form>
+
+  <aside class="card summary">
+    <h2>Your order</h2>
+    <ul class="mini-lines">
+      {% for line in q.lines %}<li><span>{{ line.quantity }} × {{ line.product.name }}</span><span>{{ line.gross_cents|money }}</span></li>{% endfor %}
+    </ul>
+    {% include "shop/_totals.html" %}
+    <p class="small"><a href="{% url 'basket' %}">← Change basket</a></p>
+  </aside>
+</div>
+{% endblock %}

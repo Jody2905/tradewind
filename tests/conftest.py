@@ -17,17 +17,17 @@ def fast_passwords(settings):
 
 @pytest.fixture
 def customer(db):
-    return get_user_model().objects.create_user("kerry", "kerry@example.test", PASSWORD, first_name="Kerry")
+    return get_user_model().objects.create_user("kerry@example.test", "kerry@example.test", PASSWORD, first_name="Kerry")
 
 
 @pytest.fixture
 def other_customer(db):
-    return get_user_model().objects.create_user("marlon", "marlon@example.test", PASSWORD, first_name="Marlon")
+    return get_user_model().objects.create_user("marlon@example.test", "marlon@example.test", PASSWORD, first_name="Marlon")
 
 
 @pytest.fixture
 def staff(db):
-    return get_user_model().objects.create_user("shane", "shane@tradewind.test", PASSWORD, is_staff=True)
+    return get_user_model().objects.create_user("shane@tradewind.test", "shane@tradewind.test", PASSWORD, is_staff=True)
 
 
 @pytest.fixture

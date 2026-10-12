@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load shop_tags %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block content %}
+<a class="back" href="{% url 'catalogue' %}?category={{ product.category.slug }}">← {{ product.category.name }}</a>
+<div class="product">
+  {% include "shop/_art.html" with big=True %}
+  <div class="product-info">
+    <h1>{{ product.name }}</h1>
+    <p class="price big">{{ product.price_cents|money }}</p>
+    <p class="muted small">{% if product.vat_rate %}Includes {{ product.vat_rate }}% VAT{% else %}VAT-free (zero-rated){% endif %} · SKU {{ product.sku }}</p>
+    <p>{{ product.description }}</p>
+    <p class="stock {% if product.stock == 0 %}stock-out{% elif product.low_on_stock %}stock-low{% endif %}">{% stock_label product %}</p>
+    {% if max_qty > 0 %}
+      <form method="post" action="{% url 'basket_add' product.id %}" class="add">{% csrf_token %}
+        <label>Quantity <input type="number" name="quantity" value="1" min="1" max="{{ max_qty }}"></label>
+        <button class="btn btn-primary">Add to basket</button>
+      </form>
+    {% elif product.stock %}
+      <p class="muted">You have all {{ in_basket }} in your basket.</p>
+    {% endif %}
+    {% if in_basket %}<p class="small"><a href="{% url 'basket' %}">{{ in_basket }} in your basket · view basket →</a></p>{% endif %}
+  </div>
+</div>
+{% endblock %}

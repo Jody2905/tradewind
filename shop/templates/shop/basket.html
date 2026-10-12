@@ -1,0 +1,50 @@
+{% extends "base.html" %}{% load shop_tags %}
+{% block title %}Basket{% endblock %}
+{% block content %}
+<h1>Your basket</h1>
+{% if not q.lines %}
+  <div class="empty">Your basket is empty. <a href="{% url 'catalogue' %}">Start shopping →</a></div>
+{% else %}
+{% for p in q.problems %}<div class="msg msg-error">{{ p }}</div>{% endfor %}
+<div class="two">
+  <form method="post" action="{% url 'basket_update' %}" class="card lines">{% csrf_token %}
+    <table class="table">
+      <thead><tr><th>Item</th><th class="num">Price</th><th>Qty</th><th class="num">Total</th><th></th></tr></thead>
+      <tbody>
+      {% for line in q.lines %}
+        <tr>
+          <td><a href="{% url 'product' line.product.slug %}">{{ line.product.name }}</a>
+            {% if line.product.vat_rate == 0 %}<br><span class="muted small">VAT-free</span>{% endif %}</td>
+          <td class="num">{{ line.product.price_cents|money }}</td>
+          <td><input class="qty" type="number" name="qty_{{ line.product.id }}" value="{{ line.quantity }}" min="0" max="50" aria-label="Quantity of {{ line.product.name }}"></td>
+          <td class="num">{{ line.gross_cents|money }}</td>
+          <td><button class="link danger" name="remove" value="{{ line.product.id }}" aria-label="Remove {{ line.product.name }}">Remove</button></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <button class="btn">Update quantities</button>
+  </form>
+
+  <aside class="card summary">
+    <h2>Summary</h2>
+    {% include "shop/_totals.html" %}
+    <form method="post" action="{% url 'basket_discount' %}" class="code-form">{% csrf_token %}
+      {% if q.discount_code %}
+        <span>Code <strong>{{ q.discount_code }}</strong> applied</span>
+        <button class="link" name="remove" value="1">Remove</button>
+      {% else %}
+        <input name="code" placeholder="Discount code" aria-label="Discount code" maxlength="30">
+        <button class="btn">Apply</button>
+      {% endif %}
+    </form>
+    <p class="small muted">Delivery is {{ delivery_fee|money }}, or free on orders of {{ free_from|money }} or more. Collection is always free.</p>
+    {% if q.problems %}
+      <button class="btn btn-primary full" disabled>Checkout</button>
+    {% else %}
+      <a class="btn btn-primary full" href="{% url 'checkout' %}">Checkout</a>
+    {% endif %}
+  </aside>
+</div>
+{% endif %}
+{% endblock %}

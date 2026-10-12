@@ -202,8 +202,8 @@ class OrderLine(models.Model):
 class OrderEvent(models.Model):
     """The order's history: every status change, who made it and why."""
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="events")
-    from_status = models.CharField(max_length=20, blank=True)
-    to_status = models.CharField(max_length=20)
+    from_status = models.CharField(max_length=20, blank=True, choices=Order.Status.choices)
+    to_status = models.CharField(max_length=20, choices=Order.Status.choices)
     by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     note = models.CharField(max_length=200, blank=True)
     at = models.DateTimeField()

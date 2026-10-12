@@ -37,6 +37,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "shop.middleware.SecurityHeaders",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -51,6 +52,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "shop.context.shop",
             ],
         },
     },
@@ -85,6 +87,15 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "catalogue"
+LOGOUT_REDIRECT_URL = "catalogue"
+
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+X_FRAME_OPTIONS = "DENY"
+SECURE_REFERRER_POLICY = "same-origin"
+if not DEBUG:                                  # on a real server, cookies only travel over HTTPS
+    SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = True
 
 # ---- Shop settings ------------------------------------------------------------
 SHOP_NAME = "Tradewind"
@@ -92,3 +103,10 @@ CURRENCY = "EC$"
 DELIVERY_FEE_CENTS = 2500                  # EC$25.00, VAT included
 FREE_DELIVERY_FROM_CENTS = 30000           # free delivery on orders of EC$300 or more
 UNPAID_ORDER_DAYS = {"collection": 2, "bank_transfer": 3}   # unpaid orders are cancelled after this
+# Shown to customers who choose bank transfer. These are made-up demo details, not a real account.
+BANK_DETAILS = {
+    "bank": "Demo Bank (not a real account)",
+    "account_name": "Tradewind Demo Shop",
+    "account_number": "000-DEMO-0000",
+    "note": "Put your order number as the payment reference.",
+}
